@@ -43,7 +43,7 @@ st.markdown("""
         border-left: 4px solid #3498db;
     }
     .success-box {
-        background-color: #9ed6ac;
+        background-color: #ac9ed6;
         border: 1px solid #c3e6cb;
         border-radius: 0.25rem;
         padding: 1rem;
