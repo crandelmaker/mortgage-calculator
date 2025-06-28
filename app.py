@@ -282,7 +282,7 @@ def run_simulation(data):
     # Tracking lists
     mortgage_balances = []
     savings_balances = []
-    net_wealth = []
+    total_overpayments_cumulative = []
     years = []
     monthly_incomes = []
     monthly_expenses_list = []
@@ -298,6 +298,7 @@ def run_simulation(data):
     mortgage_paid_off = False
     overpayment_made_this_year = False
     current_year = 0
+    cumulative_overpayments = 0
     
     for month in range(months):
         if mortgage_paid_off:
@@ -337,6 +338,7 @@ def run_simulation(data):
                     mortgage_balance -= payment_to_mortgage
                     cash_savings -= payment_to_mortgage
                     lump_sum = payment_to_mortgage
+                    cumulative_overpayments += payment_to_mortgage
                     overpayment_events.append({
                         'month': month,
                         'amount': payment_to_mortgage,
@@ -362,6 +364,7 @@ def run_simulation(data):
                     mortgage_balance -= payment_to_mortgage
                     cash_savings -= payment_to_mortgage
                     lump_sum = payment_to_mortgage
+                    cumulative_overpayments += payment_to_mortgage
                     overpayment_events.append({
                         'month': month,
                         'amount': payment_to_mortgage,
@@ -388,6 +391,7 @@ def run_simulation(data):
                     mortgage_balance -= potential_overpayment
                     cash_savings -= potential_overpayment
                     current_overpayment = potential_overpayment
+                    cumulative_overpayments += potential_overpayment
                     overpayment_made_this_year = True
                     overpayment_events.append({
                         'month': month,
@@ -403,7 +407,7 @@ def run_simulation(data):
         # Track progress
         mortgage_balances.append(mortgage_balance)
         savings_balances.append(cash_savings)
-        net_wealth.append(cash_savings - mortgage_balance)
+        total_overpayments_cumulative.append(cumulative_overpayments)
         years.append(month / 12)
         monthly_incomes.append(monthly_income)
         monthly_expenses_list.append(monthly_expenses)
@@ -426,9 +430,10 @@ def run_simulation(data):
         'total_interest_paid': total_interest_paid,
         'interest_saved': interest_saved,
         'final_savings': cash_savings,
+        'total_overpayments': cumulative_overpayments,
         'mortgage_balances': mortgage_balances,
         'savings_balances': savings_balances,
-        'net_wealth': net_wealth,
+        'total_overpayments_cumulative': total_overpayments_cumulative,
         'years': years,
         'monthly_incomes': monthly_incomes,
         'monthly_expenses': monthly_expenses_list,
@@ -474,10 +479,9 @@ def display_results(results, data):
         )
     
     with col4:
-        final_net_worth = results['final_savings'] - (results['mortgage_balances'][-1] if results['mortgage_balances'] else 0)
         st.metric(
-            "📈 Net Wealth",
-            f"£{final_net_worth:,.0f}"
+            "🚀 Total Overpayments",
+            f"£{results['total_overpayments']:,.0f}"
         )
     
     # Overpayment events
@@ -504,7 +508,7 @@ def display_results(results, data):
         'Year': results['years'],
         'Mortgage Balance': results['mortgage_balances'],
         'Savings Balance': results['savings_balances'],
-        'Net Wealth': results['net_wealth'],
+        'Total Overpayments': results['total_overpayments_cumulative'],
         'Monthly Income': results['monthly_incomes'],
         'Monthly Expenses': results['monthly_expenses'],
         'Overpayment': results['overpayments'],
@@ -574,8 +578,8 @@ def create_charts(results, data):
         row=1, col=1
     )
     fig.add_trace(
-        go.Scatter(x=results['years'], y=results['net_wealth'], 
-                  name='Net Wealth', line=dict(color='blue', width=3, dash='dash')),
+        go.Scatter(x=results['years'], y=results['total_overpayments_cumulative'], 
+                  name='Total Overpayments', line=dict(color='blue', width=3, dash='dash')),
         row=1, col=1
     )
     
