@@ -619,71 +619,160 @@ def display_results(results, data):
     )
 
 def create_charts(results, data):
-    """Create interactive charts"""
+    """Create interactive charts optimized for mobile"""
     
     st.markdown('<h3 class="section-header">📈 Interactive Charts</h3>', unsafe_allow_html=True)
     
-    # Main balance chart
-    fig = make_subplots(
-        rows=2, cols=2,
-        subplot_titles=(
-            'Mortgage vs Savings Balance Over Time',
-            'Monthly Overpayments',
-            'Income vs Expenses Growth',
-            'Available Cash After Payments'
-        ),
-        specs=[[{"secondary_y": False}, {"secondary_y": False}],
-               [{"secondary_y": False}, {"secondary_y": False}]]
+    # Chart 1: Main Balance Chart (most important)
+    st.markdown("#### 🏠 Mortgage vs Savings Balance Over Time")
+    fig1 = go.Figure()
+    
+    fig1.add_trace(go.Scatter(
+        x=results['years'], 
+        y=results['mortgage_balances'], 
+        name='Mortgage Balance', 
+        line=dict(color='#e74c3c', width=3),
+        hovertemplate='<b>Year %{x:.1f}</b><br>Mortgage: £%{y:,.0f}<extra></extra>'
+    ))
+    
+    fig1.add_trace(go.Scatter(
+        x=results['years'], 
+        y=results['savings_balances'], 
+        name='Savings Balance', 
+        line=dict(color='#27ae60', width=3),
+        hovertemplate='<b>Year %{x:.1f}</b><br>Savings: £%{y:,.0f}<extra></extra>'
+    ))
+    
+    fig1.add_trace(go.Scatter(
+        x=results['years'], 
+        y=results['total_overpayments_cumulative'], 
+        name='Total Overpayments', 
+        line=dict(color='#3498db', width=3, dash='dash'),
+        hovertemplate='<b>Year %{x:.1f}</b><br>Total Overpayments: £%{y:,.0f}<extra></extra>'
+    ))
+    
+    fig1.update_layout(
+        height=400,
+        xaxis_title="Years",
+        yaxis_title="Amount (£)",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(l=0, r=0, t=40, b=0),
+        hovermode='x unified'
     )
     
-    # Chart 1: Balances
-    fig.add_trace(
-        go.Scatter(x=results['years'], y=results['mortgage_balances'], 
-                  name='Mortgage Balance', line=dict(color='red', width=3)),
-        row=1, col=1
-    )
-    fig.add_trace(
-        go.Scatter(x=results['years'], y=results['savings_balances'], 
-                  name='Savings Balance', line=dict(color='green', width=3)),
-        row=1, col=1
-    )
-    fig.add_trace(
-        go.Scatter(x=results['years'], y=results['total_overpayments_cumulative'], 
-                  name='Total Overpayments', line=dict(color='blue', width=3, dash='dash')),
-        row=1, col=1
+    st.plotly_chart(fig1, use_container_width=True)
+    
+    # Chart 2: Monthly Overpayments
+    st.markdown("#### 🚀 Monthly Overpayments")
+    fig2 = go.Figure()
+    
+    fig2.add_trace(go.Scatter(
+        x=results['years'], 
+        y=results['overpayments'], 
+        name='Monthly Overpayments', 
+        line=dict(color='#9b59b6', width=2),
+        fill='tonexty',
+        fillcolor='rgba(155, 89, 182, 0.1)',
+        hovertemplate='<b>Year %{x:.1f}</b><br>Overpayment: £%{y:,.0f}<extra></extra>'
+    ))
+    
+    fig2.update_layout(
+        height=300,
+        xaxis_title="Years",
+        yaxis_title="Monthly Overpayment (£)",
+        margin=dict(l=0, r=0, t=40, b=0),
+        showlegend=False
     )
     
-    # Chart 2: Overpayments
-    fig.add_trace(
-        go.Scatter(x=results['years'], y=results['overpayments'], 
-                  name='Overpayments', line=dict(color='purple', width=2)),
-        row=1, col=2
+    st.plotly_chart(fig2, use_container_width=True)
+    
+    # Chart 3: Income vs Expenses Growth
+    st.markdown("#### 💰 Income vs Expenses Growth")
+    fig3 = go.Figure()
+    
+    fig3.add_trace(go.Scatter(
+        x=results['years'], 
+        y=results['monthly_incomes'], 
+        name='Monthly Income', 
+        line=dict(color='#27ae60', width=2),
+        hovertemplate='<b>Year %{x:.1f}</b><br>Income: £%{y:,.0f}<extra></extra>'
+    ))
+    
+    fig3.add_trace(go.Scatter(
+        x=results['years'], 
+        y=results['monthly_expenses'], 
+        name='Monthly Expenses', 
+        line=dict(color='#e74c3c', width=2),
+        hovertemplate='<b>Year %{x:.1f}</b><br>Expenses: £%{y:,.0f}<extra></extra>'
+    ))
+    
+    # Add area between lines to show spare cash
+    fig3.add_trace(go.Scatter(
+        x=results['years'], 
+        y=results['monthly_incomes'],
+        fill=None,
+        mode='lines',
+        line_color='rgba(0,0,0,0)',
+        showlegend=False,
+        hoverinfo='skip'
+    ))
+    
+    fig3.add_trace(go.Scatter(
+        x=results['years'], 
+        y=results['monthly_expenses'],
+        fill='tonexty',
+        mode='lines',
+        line_color='rgba(0,0,0,0)',
+        name='Spare Cash',
+        fillcolor='rgba(52, 152, 219, 0.2)',
+        hovertemplate='<b>Year %{x:.1f}</b><br>Spare Cash: £%{customdata:,.0f}<extra></extra>',
+        customdata=[income - expense for income, expense in zip(results['monthly_incomes'], results['monthly_expenses'])]
+    ))
+    
+    fig3.update_layout(
+        height=300,
+        xaxis_title="Years",
+        yaxis_title="Monthly Amount (£)",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(l=0, r=0, t=40, b=0)
     )
     
-    # Chart 3: Income vs Expenses
-    fig.add_trace(
-        go.Scatter(x=results['years'], y=results['monthly_incomes'], 
-                  name='Income', line=dict(color='green', width=2)),
-        row=2, col=1
-    )
-    fig.add_trace(
-        go.Scatter(x=results['years'], y=results['monthly_expenses'], 
-                  name='Expenses', line=dict(color='red', width=2)),
-        row=2, col=1
+    st.plotly_chart(fig3, use_container_width=True)
+    
+    # Chart 4: Available Cash After All Payments
+    st.markdown("#### 💵 Available Cash After All Payments")
+    fig4 = go.Figure()
+    
+    fig4.add_trace(go.Scatter(
+        x=results['years'], 
+        y=results['available_cashes'], 
+        name='Available Cash', 
+        line=dict(color='#f39c12', width=2),
+        fill='tozeroy',
+        fillcolor='rgba(243, 156, 18, 0.1)',
+        hovertemplate='<b>Year %{x:.1f}</b><br>Available: £%{y:,.0f}<extra></extra>'
+    ))
+    
+    fig4.update_layout(
+        height=300,
+        xaxis_title="Years",
+        yaxis_title="Available Cash (£)",
+        margin=dict(l=0, r=0, t=40, b=0),
+        showlegend=False
     )
     
-    # Chart 4: Available Cash
-    fig.add_trace(
-        go.Scatter(x=results['years'], y=results['available_cashes'], 
-                  name='Available Cash', line=dict(color='orange', width=2)),
-        row=2, col=2
-    )
+    st.plotly_chart(fig4, use_container_width=True)
     
-    fig.update_layout(height=800, showlegend=True, title_text="Mortgage Overpayment Analysis")
-    fig.update_xaxes(title_text="Years")
-    fig.update_yaxes(title_text="Amount (£)")
-    
-    st.plotly_chart(fig, use_container_width=True)
+    # Summary box
+    st.markdown("---")
+    st.markdown("**📱 Chart Tips:**")
+    st.markdown("""
+    - **Zoom:** Pinch or use zoom controls
+    - **Pan:** Drag to move around
+    - **Hover:** Touch/hover for exact values
+    - **Legend:** Tap to hide/show lines
+    """)
+
 
 if __name__ == "__main__":
     main()
