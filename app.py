@@ -141,6 +141,75 @@ def main():
             step=0.1
         ) / 100
         
+        # Planned expense changes
+        st.markdown("### 📅 Planned Expense Changes")
+        st.write("Add specific changes like childcare ending, new car payments, etc.")
+        
+        # Initialize session state for expense changes
+        if 'expense_changes' not in st.session_state:
+            st.session_state.expense_changes = []
+        
+        # Add new expense change
+        with st.expander("➕ Add Expense Change", expanded=False):
+            col1, col2 = st.columns(2)
+            with col1:
+                change_month = st.number_input(
+                    "Month when change occurs",
+                    min_value=1,
+                    max_value=360,
+                    value=12,
+                    step=1,
+                    key="new_month"
+                )
+            with col2:
+                change_amount = st.number_input(
+                    "Monthly change (£, negative for savings)",
+                    value=0,
+                    step=50,
+                    key="new_amount",
+                    help="Negative values reduce expenses (e.g., -300 for childcare ending)"
+                )
+            
+            change_description = st.text_input(
+                "Description (optional)",
+                placeholder="e.g., Childcare ends, New car payment",
+                key="new_description"
+            )
+            
+            if st.button("Add Change", key="add_change"):
+                if change_amount != 0:
+                    st.session_state.expense_changes.append({
+                        'month': change_month,
+                        'amount': change_amount,
+                        'description': change_description or f"Change at month {change_month}"
+                    })
+                    st.success(f"Added expense change: {change_description or 'Expense change'}")
+                    st.rerun()
+        
+        # Display current expense changes
+        if st.session_state.expense_changes:
+            st.markdown("**Current Planned Changes:**")
+            for i, change in enumerate(st.session_state.expense_changes):
+                col1, col2, col3 = st.columns([2, 2, 1])
+                with col1:
+                    st.write(f"Month {change['month']}")
+                with col2:
+                    sign = "+" if change['amount'] > 0 else ""
+                    st.write(f"{sign}£{change['amount']}/month")
+                with col3:
+                    if st.button("🗑️", key=f"delete_{i}", help="Delete this change"):
+                        st.session_state.expense_changes.pop(i)
+                        st.rerun()
+                
+                if change['description']:
+                    st.caption(change['description'])
+        
+        # Convert to the format expected by the simulation
+        expense_reduction_schedule = {}
+        for change in st.session_state.expense_changes:
+            # Note: negative because the simulation subtracts reductions
+            expense_reduction_schedule[change['month']] = -change['amount']
+        
         # Savings
         st.markdown("### 💳 Savings & Emergency Fund")
         current_savings = st.number_input(
@@ -209,6 +278,7 @@ def main():
             'monthly_expenses': monthly_expenses,
             'income_growth_rate': income_growth,
             'expense_growth_rate': expense_growth,
+            'expense_reduction_schedule': expense_reduction_schedule,
             'initial_savings': current_savings,
             'savings_rate': savings_rate,
             'savings_tax_rate': savings_tax,
